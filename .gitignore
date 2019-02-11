@@ -1,0 +1,3 @@
+*.toml
+remote_settings_uptake_worrying.egg-info
+requests_cache1.sqlite
