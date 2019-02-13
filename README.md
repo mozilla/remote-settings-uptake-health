@@ -11,6 +11,7 @@ trigger alerts/notifications that the Product Delivery team can take heed of.
 ## To hack on
 
 ```
+$ cp config.toml.sample config.toml
 $ pip install -e ".[dev]"
-$ python main.py --help
+$ REDASH_API_KEY=OCZccH...FhB4cT python main.py config.toml
 ```
