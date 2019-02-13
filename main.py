@@ -149,7 +149,7 @@ def run_config_file(conf, verbose=False, dry_run=False):
     query_result = data["query_result"]
     data = query_result["data"]
     rows = data["rows"]
-    count_bad = 0
+    bad_rows = []
     for row in rows:
         source = row.pop("source")
 
@@ -188,14 +188,14 @@ def run_config_file(conf, verbose=False, dry_run=False):
             f"{source:40} {stats:40} {percent:>10.2f}%", fg="red" if is_bad else None
         )
         if is_bad:
-            count_bad += 1
-    return count_bad
+            bad_statuses = [
+                (s, v)
+                for s, v in row.items()
+                if s not in good_statuses + neutral_statuses
+            ]
+            bad_rows.append((source, bad_statuses))
 
-
-def error_out(msg, raise_abort=True):
-    click.echo(click.style(msg, fg="red"))
-    if raise_abort:
-        raise click.Abort
+    return bad_rows
 
 
 @click.command()
@@ -206,7 +206,15 @@ def cli(configfile, dry_run, verbose):
     config = toml.load(configfile)
     bads = run_config_file(config, verbose=verbose, dry_run=dry_run)
     if bads:
-        error_out(f"{bads} settings have a bad ratio over threshold.")
+        click.secho(
+            f"\n{len(bads)} settings have a bad ratio over threshold.", fg="red"
+        )
+        for source, statuses in bads:
+            statuses_desc = sorted(statuses, key=lambda e: e[1], reverse=True)
+            stats = " ".join([f"{s}:{v:,}" for s, v in statuses_desc if v > 0])
+            click.secho(f"{source:40} ({stats})")
+
+        raise click.Abort
 
 
 if __name__ == "__main__":
