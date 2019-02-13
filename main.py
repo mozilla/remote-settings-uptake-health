@@ -139,8 +139,8 @@ def run_config_file(conf, verbose=False, dry_run=False):
         return status in neutral_statuses
 
     min_total_entries = conf.get("min_total_entries", DEFAULT_MIN_TOTAL_ENTRIES)
-    error_threshold_percent = conf.get(
-        "default_error_threshold", DEFAULT_ERROR_THRESHOLD_PERCENT
+    default_error_threshold_percent = conf.get(
+        "error_threshold_percent", DEFAULT_ERROR_THRESHOLD_PERCENT
     )
 
     downloader = Downloader(timeout_seconds=conf.get("timeout_seconds", 60))
@@ -156,6 +156,11 @@ def run_config_file(conf, verbose=False, dry_run=False):
         if exclude_source(source):
             log(f"Skipping {source!r} because it's excluded")
             continue
+
+        source_conf = conf.get(source, {})
+        error_threshold_percent = source_conf.get(
+            "error_threshold_percent", default_error_threshold_percent
+        )
 
         good = bad = 0
         for status, count in row.items():
