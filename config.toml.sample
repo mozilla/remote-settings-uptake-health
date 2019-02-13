@@ -1,2 +1,5 @@
 min_total_entries=1000
-default_error_threshold=2
+error_threshold_percent=2
+
+["main/collection"]
+error_threshold_percent = 10
