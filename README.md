@@ -1,4 +1,4 @@
-# remote-settings-uptake-worrying
+# remote-settings-health
 
 The objective of this script is to check in on the collected uptake from Telemetry
 with respect to Remote Settings. Essentially, across all statuses that we worry
