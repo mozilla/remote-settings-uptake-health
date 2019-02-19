@@ -14,7 +14,7 @@ setup(
     name="remote-settings-uptake-worrying",
     version="0.0.0",
     author="Product Delivery",
-    url="https://github.com/XXXX",
+    url="https://github.com/mozilla/remote-settings-uptake-health",
     description="You OK Remote Settings Uptake Telemetry?",
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
@@ -29,7 +29,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    install_requires=["requests", "python-decouple", "toml", "click"],
+    install_requires=["requests", "python-decouple", "click"],
     extras_require={
         "dev": ["tox", "twine", "therapist", "black", "flake8", "requests_cache"]
     },

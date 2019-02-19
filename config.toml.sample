@@ -1,5 +1,0 @@
-min_total_entries=1000
-error_threshold_percent=2
-
-["main/collection"]
-error_threshold_percent = 10

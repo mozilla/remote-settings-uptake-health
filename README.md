@@ -15,3 +15,13 @@ $ cp config.toml.sample config.toml
 $ pip install -e ".[dev]"
 $ REDASH_API_KEY=OCZccH...FhB4cT python main.py config.toml
 ```
+
+## Docker
+
+To build:
+
+    docker build -t remote-settings-uptake-health .
+
+To run:
+
+    docker run -t --env-file .env remote-settings-uptake-health

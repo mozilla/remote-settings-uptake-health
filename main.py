@@ -3,7 +3,6 @@ from urllib.parse import urlencode
 
 import click
 import requests
-import toml
 from decouple import config, undefined, Csv
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
@@ -32,28 +31,42 @@ REDASH_API_KEY = config(
     default=undefined if "api_key=" not in REDASH_API_QUERY_URL else None,
 )
 
-DEFAULT_EXCLUDE_SOURCES = config(
+REDASH_TIMEOUT_SECONDS = config("REDASH_TIMEOUT_SECONDS", cast=int, default=60)
+
+EXCLUDE_SOURCES = config(
     "EXCLUDE_SOURCES",
     cast=Csv(),
     default="shield-recipe-client/*, normandy/*, main/url-classifier-skip-urls",
 )
 
 # XXX What about instead just say that `bad == status.endswith('_error')`??
-DEFAULT_GOOD_STATUSES = config(
-    "GOOD_STATUSES", cast=Csv(), default="success, up_to_date"
-)
+GOOD_STATUSES = config("GOOD_STATUSES", cast=Csv(), default="success, up_to_date")
 
 # XXX What about 'backoff' ??
-DEFAULT_NEUTRAL_STATUSES = config(
-    "NEUTRAL_STATUSES", cast=Csv(), default="pref_disabled"
-)
+NEUTRAL_STATUSES = config("NEUTRAL_STATUSES", cast=Csv(), default="pref_disabled")
 
 # Statuses to ignore if their total good+bad numbers are less than this.
-DEFAULT_MIN_TOTAL_ENTRIES = config("MIN_TOTAL_ENTRIES", cast=int, default=0)
+MIN_TOTAL_ENTRIES = config("MIN_TOTAL_ENTRIES", cast=int, default=1000)
 
 DEFAULT_ERROR_THRESHOLD_PERCENT = config(
     "DEFAULT_ERROR_THRESHOLD_PERCENT", cast=float, default=2.0
 )
+
+
+def _parse_threshold_percent(s):
+    name, percentage = s.split("=")
+    return (name.strip(), float(percentage))
+
+
+SPECIFIC_ERROR_THRESHOLD_PERCENT = dict(
+    config(
+        "SPECIFIC_ERROR_THRESHOLD_PERCENT",
+        cast=Csv(cast=_parse_threshold_percent, delimiter=";"),
+        default=("main/collection = 10; foo/bar = 2 "),
+    )
+)
+
+
 session = requests.Session()
 
 
@@ -118,32 +131,21 @@ class Downloader:
         return response.json()
 
 
-def run_config_file(conf, verbose=False, dry_run=False):
+def run(verbose=False, dry_run=False):
     def log(*args):
         if verbose:
             click.echo(" ".join(str(x) for x in args))
 
-    exclude_patterns = conf.get("exclude_sources", DEFAULT_EXCLUDE_SOURCES)
-
     def exclude_source(source):
-        return any(fnmatch(source, pattern) for pattern in exclude_patterns)
-
-    good_statuses = conf.get("good_statuses", DEFAULT_GOOD_STATUSES)
+        return any(fnmatch(source, pattern) for pattern in EXCLUDE_SOURCES)
 
     def is_good(status):
-        return status in good_statuses
-
-    neutral_statuses = conf.get("neutral_statuses", DEFAULT_NEUTRAL_STATUSES)
+        return status in GOOD_STATUSES
 
     def is_neutral(status):
-        return status in neutral_statuses
+        return status in NEUTRAL_STATUSES
 
-    min_total_entries = conf.get("min_total_entries", DEFAULT_MIN_TOTAL_ENTRIES)
-    default_error_threshold_percent = conf.get(
-        "error_threshold_percent", DEFAULT_ERROR_THRESHOLD_PERCENT
-    )
-
-    downloader = Downloader(timeout_seconds=conf.get("timeout_seconds", 60))
+    downloader = Downloader(timeout_seconds=REDASH_TIMEOUT_SECONDS)
     data = downloader.download()
 
     query_result = data["query_result"]
@@ -157,9 +159,8 @@ def run_config_file(conf, verbose=False, dry_run=False):
             log(f"Skipping {source!r} because it's excluded")
             continue
 
-        source_conf = conf.get(source, {})
-        error_threshold_percent = source_conf.get(
-            "error_threshold_percent", default_error_threshold_percent
+        error_threshold_percent = SPECIFIC_ERROR_THRESHOLD_PERCENT.get(
+            source, DEFAULT_ERROR_THRESHOLD_PERCENT
         )
 
         good = bad = 0
@@ -179,15 +180,15 @@ def run_config_file(conf, verbose=False, dry_run=False):
             log(f"Skipping {source!r} because exactly 0 good+bad statuses")
             continue
 
-        if good + bad < min_total_entries:
+        if good + bad < MIN_TOTAL_ENTRIES:
             log(
                 f"Skipping {source!r} because exactly too few good+bad statuses "
-                f"({good + bad} < {min_total_entries})"
+                f"({good + bad} < {MIN_TOTAL_ENTRIES})"
             )
             continue
 
         percent = 100 * bad / (good + bad)
-        stats = f"(good:{good:,} bad:{bad:,})"
+        stats = f"(good:{good:>10,} bad:{bad:>10,})"
         is_bad = percent > error_threshold_percent
         click.secho(
             f"{source:40} {stats:40} {percent:>10.2f}%", fg="red" if is_bad else None
@@ -196,7 +197,7 @@ def run_config_file(conf, verbose=False, dry_run=False):
             bad_statuses = [
                 (s, v)
                 for s, v in row.items()
-                if s not in good_statuses + neutral_statuses
+                if s not in GOOD_STATUSES + NEUTRAL_STATUSES
             ]
             bad_rows.append((source, bad_statuses))
 
@@ -206,10 +207,8 @@ def run_config_file(conf, verbose=False, dry_run=False):
 @click.command()
 @click.option("-v", "--verbose", is_flag=True)
 @click.option("-d", "--dry-run", is_flag=True)
-@click.argument("configfile", type=click.File("r"))
-def cli(configfile, dry_run, verbose):
-    config = toml.load(configfile)
-    bads = run_config_file(config, verbose=verbose, dry_run=dry_run)
+def cli(dry_run, verbose):
+    bads = run(verbose=verbose, dry_run=dry_run)
     if bads:
         click.secho(
             f"\n{len(bads)} settings have a bad ratio over threshold.", fg="red"
