@@ -58,11 +58,18 @@ def _parse_threshold_percent(s):
     return (name.strip(), float(percentage))
 
 
+# To override this, if you want, for a particular key, override the specific
+# threshold, the format is like this:
+#
+#    SPECIFIC_ERROR_THRESHOLD_PERCENT="main/mycollection = 5.5; foo/bar= 12"
+#
+# That means that the error threshold is 5.5% specifically for 'main/collection' and
+# 12.0% for 'foo/bar'.
 SPECIFIC_ERROR_THRESHOLD_PERCENT = dict(
     config(
         "SPECIFIC_ERROR_THRESHOLD_PERCENT",
         cast=Csv(cast=_parse_threshold_percent, delimiter=";"),
-        default=("main/collection = 10; foo/bar = 2 "),
+        default="",
     )
 )
 
