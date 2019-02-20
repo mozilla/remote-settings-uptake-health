@@ -61,13 +61,13 @@ def _parse_threshold_percent(s):
 # To override this, if you want, for a particular key, override the specific
 # threshold, the format is like this:
 #
-#    SPECIFIC_ERROR_THRESHOLD_PERCENT="main/mycollection = 5.5; foo/bar= 12"
+#    SPECIFIC_ERROR_THRESHOLD_PERCENTAGES="main/mycollection = 5.5; foo/bar= 12"
 #
 # That means that the error threshold is 5.5% specifically for 'main/collection' and
 # 12.0% for 'foo/bar'.
-SPECIFIC_ERROR_THRESHOLD_PERCENT = dict(
+SPECIFIC_ERROR_THRESHOLD_PERCENTAGES = dict(
     config(
-        "SPECIFIC_ERROR_THRESHOLD_PERCENT",
+        "SPECIFIC_ERROR_THRESHOLD_PERCENTAGES",
         cast=Csv(cast=_parse_threshold_percent, delimiter=";"),
         default="",
     )
@@ -166,7 +166,7 @@ def run(verbose=False, dry_run=False):
             log(f"Skipping {source!r} because it's excluded")
             continue
 
-        error_threshold_percent = SPECIFIC_ERROR_THRESHOLD_PERCENT.get(
+        error_threshold_percent = SPECIFIC_ERROR_THRESHOLD_PERCENTAGES.get(
             source, DEFAULT_ERROR_THRESHOLD_PERCENT
         )
 
