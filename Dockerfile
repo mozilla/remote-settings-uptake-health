@@ -1,10 +1,8 @@
 FROM python:3.7-slim
 WORKDIR /app
 
-COPY ./setup.py /app/setup.py
-COPY ./README.md /app/README.md
-RUN pip install -e ".[dev]"
-COPY ./main.py /app/main.py
+COPY . /app
+RUN pip install -e ".[dev,test]"
 
-ENTRYPOINT ["python", "main.py"]
-CMD []
+ENTRYPOINT ["/bin/bash", "/app/run.sh"]
+CMD ["main"]

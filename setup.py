@@ -31,6 +31,7 @@ setup(
     zip_safe=False,
     install_requires=["requests", "python-decouple", "click"],
     extras_require={
-        "dev": ["tox", "twine", "therapist", "black", "flake8", "requests_cache"]
+        "dev": ["tox", "twine", "therapist", "black", "flake8", "requests_cache"],
+        "test": ["pytest", "pytest-env", "responses"],
     },
 )

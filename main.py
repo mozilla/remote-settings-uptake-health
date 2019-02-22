@@ -8,7 +8,8 @@ from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
 from requests.packages.urllib3.util.retry import Retry
 
-DEBUG = config("DEBUG", default=False)
+
+DEBUG = config("DEBUG", cast=bool, default=False)
 if DEBUG:
     # Temporary for hacking. Just prevents the same URL to be downloaded twice.
     import requests_cache
