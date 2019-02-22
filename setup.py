@@ -11,7 +11,7 @@ def get_long_description():
 
 
 setup(
-    name="remote-settings-uptake-worrying",
+    name="remote-settings-uptake-health",
     version="0.0.0",
     author="Product Delivery",
     url="https://github.com/mozilla/remote-settings-uptake-health",
