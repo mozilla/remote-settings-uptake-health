@@ -77,4 +77,4 @@ Or, to see what other options are available:
 
 To run the unit tests with docker use:
 
-    docker run -t --env-file .env remote-settings-uptake-health test
+    docker run -t remote-settings-uptake-health test

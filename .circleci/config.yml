@@ -1,0 +1,16 @@
+version: 2
+jobs:
+  build:
+    machine: true
+    steps:
+      - checkout
+
+      - run:
+        name: Build
+        command: |
+          docker build -t mozilla/remote-settings-uptake-health:$CIRCLE_BRANCH .
+
+      - run:
+        name: Test
+        command: |
+          docker run -t mozilla/remote-settings-uptake-health:$CIRCLE_BRANCH test
