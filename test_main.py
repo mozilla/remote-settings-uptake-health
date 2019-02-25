@@ -66,6 +66,7 @@ def test_run_problems(capsys):
                         "up_to_date": 234_567,
                         "network_error": 12340,
                         "sync_error": 123,
+                        "pref_disabled": 1_000_000,  # remember, neutral and ignored
                     }
                 ]
             }
@@ -77,7 +78,8 @@ def test_run_problems(capsys):
     assert bad_rows
     bad_row, = bad_rows
     assert bad_row[0] == "foo/bar"
-    bad_keys = [x[0] for x in bad_row[1]]
+    assert bad_row[1] == 123_456 + 234_567 + 12340 + 123
+    bad_keys = [x[0] for x in bad_row[2]]
     assert bad_keys == ["network_error", "sync_error"]
 
     captured = capsys.readouterr()
