@@ -78,3 +78,39 @@ Or, to see what other options are available:
 To run the unit tests with docker use:
 
     docker run -t remote-settings-uptake-health test
+
+To run the linting checks with docker use:
+
+    docker run -t remote-settings-uptake-health lintcheck
+
+And if you just want to fix any lint warnings (that can be automated):
+
+    docker run -t remote-settings-uptake-health lintfix
+
+To get into a `bash` prompt inside the docker container run:
+
+    docker run -it --env-file .env remote-settings-uptake-health bash
+    python main.py  # for example
+
+## Code style
+
+We enforce all Python code style with `black` and `flake8`. The best tool to test this is with `therapist` which is installed as a dev package. To run it;
+
+    therapist run
+
+That will check all the files you've touched in the current branch.
+To test across _all_ files, including those you haven't touched:
+
+    therapist use lint:all
+
+If you do get warnings from this, you can either fix it manually
+in your editor or run:
+
+    therapist use fix
+
+Even better, if you intend to work on this repo a lot, install `therapist` as a pre-commit git hook:
+
+    therapist install
+
+Now, trying to commit, with code style warnings, will prevent you and
+you have to run the above (`therapist use fix`) fix command.

@@ -6,11 +6,16 @@ jobs:
       - checkout
 
       - run:
-        name: Build
-        command: |
-          docker build -t mozilla/remote-settings-uptake-health:$CIRCLE_BRANCH .
+          name: Build
+          command: |
+            docker build -t mozilla/remote-settings-uptake-health:$CIRCLE_SHA1 .
 
       - run:
-        name: Test
-        command: |
-          docker run -t mozilla/remote-settings-uptake-health:$CIRCLE_BRANCH test
+          name: Test
+          command: |
+            docker run -t mozilla/remote-settings-uptake-health:$CIRCLE_SHA1 test
+
+      - run:
+          name: Lint check
+          command: |
+            docker run -t mozilla/remote-settings-uptake-health:$CIRCLE_SHA1 lintcheck

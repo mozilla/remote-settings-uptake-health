@@ -2,7 +2,7 @@
 set -eo pipefail
 
 usage() {
-  echo "usage: ./run.sh main|test"
+  echo "usage: ./run.sh main|test|lintcheck|lintfix"
   exit 1
 }
 
@@ -14,6 +14,17 @@ case $1 in
   test)
     shift
     pytest "$@"
+    ;;
+  lintcheck)
+    shift
+    # Can't use therapist in docker because the .git directory isn't mounted.
+    black --check --diff .
+    flake8 .
+    ;;
+  lintfix)
+    shift
+    # Can't use therapist in docker because the .git directory isn't mounted.
+    black .
     ;;
   *)
     exec "$@"
