@@ -184,18 +184,19 @@ def run(verbose=False, dry_run=False):
                 good += row[status]
             elif not is_neutral(status):
                 bad += row[status]
-        if not (good + bad):
+        total = good + bad
+        if not total:
             log(f"Skipping {source!r} because exactly 0 good+bad statuses")
             continue
 
-        if good + bad < MIN_TOTAL_ENTRIES:
+        if total < MIN_TOTAL_ENTRIES:
             log(
                 f"Skipping {source!r} because exactly too few good+bad statuses "
-                f"({good + bad} < {MIN_TOTAL_ENTRIES})"
+                f"({total} < {MIN_TOTAL_ENTRIES})"
             )
             continue
 
-        percent = 100 * bad / (good + bad)
+        percent = 100 * bad / total
         stats = f"(good:{good:>10,} bad:{bad:>10,})"
         is_bad = percent > error_threshold_percent
         click.secho(
@@ -207,7 +208,7 @@ def run(verbose=False, dry_run=False):
                 for s, v in row.items()
                 if s not in GOOD_STATUSES + NEUTRAL_STATUSES
             ]
-            bad_rows.append((source, bad_statuses))
+            bad_rows.append((source, total, bad_statuses))
 
     return bad_rows
 
@@ -221,9 +222,9 @@ def cli(dry_run, verbose):
         click.secho(
             f"\n{len(bads)} settings have a bad ratio over threshold.", fg="red"
         )
-        for source, statuses in bads:
+        for source, total, statuses in bads:
             statuses_desc = sorted(statuses, key=lambda e: e[1], reverse=True)
-            stats = " ".join([f"{s}:{v:,}" for s, v in statuses_desc if v > 0])
+            stats = " ".join([f"{s}: {v:,} {v/total*100:.2f}% " for s, v in statuses_desc if v > 0])
             click.secho(f"{source:40} ({stats})")
 
         raise click.Abort
