@@ -224,7 +224,13 @@ def cli(dry_run, verbose):
         )
         for source, total, statuses in bads:
             statuses_desc = sorted(statuses, key=lambda e: e[1], reverse=True)
-            stats = "\n".join([f"\t{s:<16} {v/total*100:.2f}% ({v:,})" for s, v in statuses_desc if v > 0])
+            stats = "\n".join(
+                [
+                    f"\t{s:<16} {v/total*100:.2f}% ({v:,})"
+                    for s, v in statuses_desc
+                    if v > 0
+                ]
+            )
             click.secho(f"\n{source}\n{stats}")
 
         raise click.Abort
