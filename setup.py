@@ -29,7 +29,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
-    install_requires=["requests", "python-decouple", "click"],
+    install_requires=["requests", "python-decouple", "click", "sentry-sdk"],
     extras_require={
         "dev": ["tox", "twine", "therapist", "black", "flake8", "requests_cache"],
         "test": ["pytest", "pytest-env", "responses"],

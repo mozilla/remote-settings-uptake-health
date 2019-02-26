@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 
 import click
 import requests
+import sentry_sdk
 from decouple import config, undefined, Csv
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError
@@ -27,10 +28,14 @@ REDASH_API_QUERY_URL = config(
     "REDASH_API_QUERY_URL",
     default="https://sql.telemetry.mozilla.org/api/queries/61352/results.json",
 )
+assert "api_key=" not in REDASH_API_QUERY_URL, "set in REDASH_API_KEY instead"
+
 REDASH_API_KEY = config(
     "REDASH_API_KEY",
     default=undefined if "api_key=" not in REDASH_API_QUERY_URL else None,
 )
+
+SENTRY_DSN = config("SENTRY_DSN", default=None)
 
 REDASH_TIMEOUT_SECONDS = config("REDASH_TIMEOUT_SECONDS", cast=int, default=60)
 
@@ -217,11 +222,37 @@ def run(verbose=False, dry_run=False):
 @click.option("-v", "--verbose", is_flag=True)
 @click.option("-d", "--dry-run", is_flag=True)
 def cli(dry_run, verbose):
-    bads = run(verbose=verbose, dry_run=dry_run)
-    if bads:
-        click.secho(
-            f"\n{len(bads)} settings have a bad ratio over threshold.", fg="red"
+    if SENTRY_DSN:
+        # Note! If you don't do `sentry_sdk.init(DSN)` it will still work
+        # to do things like calling `sentry_sdk.capture_exception(exception)`
+        # It just means it's a noop.
+        sentry_sdk.init(SENTRY_DSN)
+    elif not DEBUG:
+        click.secho("No SENTRY_DSN set but not in DEBUG mode!", bold=True)
+
+    try:
+        bads = run(verbose=verbose, dry_run=dry_run)
+    except Exception as exception:
+        # We use Sentry for two things: General unexpected Python exceptions
+        # and plain message. This capture is for the unexpected exceptions.
+        sentry_sdk.capture_exception(exception)
+        raise
+
+    with sentry_sdk.configure_scope() as scope:
+        # Append any extra useful information.
+        scope.set_extra("REDASH_API_QUERY_URL", REDASH_API_QUERY_URL)
+        scope.set_extra("EXCLUDE_SOURCES", EXCLUDE_SOURCES)
+        scope.set_extra(
+            "DEFAULT_ERROR_THRESHOLD_PERCENT", DEFAULT_ERROR_THRESHOLD_PERCENT
         )
+        scope.set_extra(
+            "SPECIFIC_ERROR_THRESHOLD_PERCENTAGES", SPECIFIC_ERROR_THRESHOLD_PERCENTAGES
+        )
+
+        if bads:
+            click.secho(
+                f"\n{len(bads)} settings have a bad ratio over threshold.", fg="red"
+            )
         for source, total, statuses in bads:
             statuses_desc = sorted(statuses, key=lambda e: e[1], reverse=True)
             stats = "\n".join(
@@ -233,7 +264,10 @@ def cli(dry_run, verbose):
             )
             click.secho(f"\n{source}\n{stats}")
 
-        raise click.Abort
+            # Remember, this will noop if the SENTRY_DSN is not already set.
+            message = f"{source} is erroring too much.\n"
+            message += stats
+            sentry_sdk.capture_message(message)
 
 
 if __name__ == "__main__":

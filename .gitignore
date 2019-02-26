@@ -1,3 +1,2 @@
-*.toml
-remote_settings_uptake_worrying.egg-info
 requests_cache1.sqlite
+remote_settings_uptake_health.egg-info
