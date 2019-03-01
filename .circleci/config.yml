@@ -1,3 +1,10 @@
+# These environment variables must be set in CircleCI UI
+#
+# DOCKERHUB_REPO - docker hub repo, format: <username>/<repo>
+# DOCKER_USER
+# DOCKER_PASS
+#
+
 version: 2
 jobs:
   build:
@@ -19,3 +26,13 @@ jobs:
           name: Lint check
           command: |
             docker run -t mozilla/remote-settings-uptake-health:$CIRCLE_SHA1 lintcheck
+
+      - run:
+          name: Push to Dockerhub
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              ./deploy.sh latest
+            fi
+            if [ -n "${CIRCLE_TAG}" ]; then
+              ./deploy.sh "$CIRCLE_TAG"
+            fi
