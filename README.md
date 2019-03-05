@@ -8,6 +8,73 @@ a threshold.
 The ultimately use case for this script is to run it periodically and use it to
 trigger alerts/notifications that the Product Delivery team can take heed of.
 
+## Architectural Overview
+
+### In Plain English
+
+This is stateless script, written in Python, meant to be executed roughly once a day.
+It queries [Redash](https://sql.telemetry.mozilla.org) for
+a Redash query's data that is pre-emptively run every 24 hours.
+The data it analyses is a
+list of everything stored in "Remote Content" along with a count of
+every possible status (e.g. `up_to_date`, `network_error`, etc.)
+The script sums the "good" statuses and compares it against the "bad" statuses and
+if that ratio (expressed as a percentage) is over a certain threshold it alerts
+by sending an event to Sentry which notifies the team by email.
+
+### Historical Strategy
+
+As of Firefox Nightly 67, Firefox clients that use Remote Settings only
+send Telemetry pings in daily batches.
+I.e. it's _not_ real-time. The "uptake histogram" is buffered in
+the browser and will send periodically instead of as soon as possible. In Firefox
+Nightly (67 at the time of writing),
+[we are switching to real-time Telemetry Events](https://bugzilla.mozilla.org/show_bug.cgi?id=1517469).
+
+On the Telemetry backend we're still consuming the older uptake histogram but once,
+the population using the new Telemetry Events is large enough,
+we will switch the Redash query (where appropriate) and still use
+this script to worry about the percentage thresholds.
+And the strategy for notifications should hopefully not change. There is no plan
+to rush this change since we'll still be doing "legacy" histogram telemetry
+_and_ the new telemetry events so we can let it mature a bit before changing
+the source of data.
+
+Although we will eventually switch to real-time Telemetry Events, nothing changes in
+terms of the surface API but the underlying data is more up-to-date and the response
+time of reacting to failure spikes is faster.
+
+It is worth noting that as underlying tools change, we might decommission this
+solution and use something native to the Telemetry analysis tools that achives
+the same goal.
+
+### Redash
+
+The query we use is mentioned as a config default in the main `main.py` file.
+Follow that link, without the API key, in your browser to study the query and/or
+to fork it for a better query when applicable.
+
+### Configuration
+
+This script encodes all configuration inside `main.py` as defaults for things
+that can be overwritten by environment variables.
+
+The only **mandatory environment variable** is `REDASH_API_KEY`. You get this
+by logging in [https://sql.telemetry.mozilla.org](https://sql.telemetry.mozilla.org)
+and click to edit the/any relevant query and in the upper right-hand corner there's a
+drop-down with the label "..." and inside it "Show API Key".
+
+Either put this into a `.env` file or use it as a regular sourced enviroment variable.
+E.g.:
+
+```bash
+    $ cat .env
+    REDASH_API_KEY=MXAqPP1Q4FNLjHeT1w
+```
+
+For most other configuration options, the best strategy is to study all the
+uppercased constants in the `main.py` file.
+
 ## To hack on
 
 ```bash
