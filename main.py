@@ -167,8 +167,9 @@ def run(verbose=False, dry_run=False):
     rows = data["rows"]
 
     # Determine the date range of this dataset.
-    min_timestamp = min([row.pop("min_timestamp") for row in rows])
-    max_timestamp = max([row.pop("max_timestamp") for row in rows])
+    # We `pop()` the columns to eventually keep statuses only.
+    min_timestamp = min(row.pop("min_timestamp") for row in rows)
+    max_timestamp = max(row.pop("max_timestamp") for row in rows)
     click.secho(
         "📅 From {} to {}".format(
             datetime.utcfromtimestamp(min_timestamp),
