@@ -22,6 +22,9 @@ The script sums the "good" statuses and compares it against the "bad" statuses a
 if that ratio (expressed as a percentage) is over a certain threshold it alerts
 by sending an event to Sentry which notifies the team by email.
 
+> Note: *bad* statuses are the ones ending with ``_error`` (eg. ``sync_error``,
+> ``network_error``, ...)
+
 ### Historical Strategy
 
 As of Firefox Nightly 67, Firefox clients that use Remote Settings only

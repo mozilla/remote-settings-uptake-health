@@ -46,12 +46,6 @@ EXCLUDE_SOURCES = config(
     default="shield-recipe-client/*, normandy/*, main/url-classifier-skip-urls",
 )
 
-# XXX What about instead just say that `bad == status.endswith('_error')`??
-GOOD_STATUSES = config("GOOD_STATUSES", cast=Csv(), default="success, up_to_date")
-
-# XXX What about 'backoff' ??
-NEUTRAL_STATUSES = config("NEUTRAL_STATUSES", cast=Csv(), default="pref_disabled")
-
 # Statuses to ignore if their total good+bad numbers are less than this.
 MIN_TOTAL_ENTRIES = config("MIN_TOTAL_ENTRIES", cast=int, default=1000)
 
@@ -153,11 +147,8 @@ def run(verbose=False, dry_run=False):
     def exclude_source(source):
         return any(fnmatch(source, pattern) for pattern in EXCLUDE_SOURCES)
 
-    def is_good(status):
-        return status in GOOD_STATUSES
-
-    def is_neutral(status):
-        return status in NEUTRAL_STATUSES
+    def is_bad(status):
+        return status.endswith("_error")
 
     downloader = Downloader(timeout_seconds=REDASH_TIMEOUT_SECONDS)
     data = downloader.download()
@@ -167,9 +158,8 @@ def run(verbose=False, dry_run=False):
     rows = data["rows"]
 
     # Determine the date range of this dataset.
-    # We `pop()` the columns to eventually keep statuses only.
-    min_timestamp = min(row.pop("min_timestamp") for row in rows)
-    max_timestamp = max(row.pop("max_timestamp") for row in rows)
+    min_timestamp = min(row["min_timestamp"] for row in rows)
+    max_timestamp = max(row["max_timestamp"] for row in rows)
     click.secho(
         "📅 From {} to {}".format(
             datetime.utcfromtimestamp(min_timestamp),
@@ -179,7 +169,7 @@ def run(verbose=False, dry_run=False):
 
     bad_rows = []
     for row in rows:
-        source = row.pop("source")
+        source = row["source"]
         if exclude_source(source):
             log(f"Skipping {source!r} because it's excluded")
             continue
@@ -189,18 +179,23 @@ def run(verbose=False, dry_run=False):
         )
 
         good = bad = 0
-        for status, count in row.items():
+        bad_statuses = []
+        count_per_status = [
+            (s, c)
+            for s, c in row.items()
+            if s not in ("source", "min_timestamp", "max_timestamp")
+        ]
+        for status, count in count_per_status:
             log(
                 status.ljust(20),
                 f"{count:,}".rjust(10),
-                (is_good(status) and "good")
-                or (not is_neutral(status) and "bad")
-                or "neutral",
+                ("bad" if is_bad(status) else "good"),
             )
-            if is_good(status):
-                good += row[status]
-            elif not is_neutral(status):
+            if is_bad(status):
                 bad += row[status]
+                bad_statuses.append((status, count))
+            else:
+                good += row[status]
         total = good + bad
         if not total:
             log(f"Skipping {source!r} because exactly 0 good+bad statuses")
@@ -215,16 +210,12 @@ def run(verbose=False, dry_run=False):
 
         percent = 100 * bad / total
         stats = f"(good:{good:>10,} bad:{bad:>10,})"
-        is_bad = percent > error_threshold_percent
+        is_erroring = percent > error_threshold_percent
         click.secho(
-            f"{source:40} {stats:40} {percent:>10.2f}%", fg="red" if is_bad else None
+            f"{source:40} {stats:40} {percent:>10.2f}%",
+            fg="red" if is_erroring else None,
         )
-        if is_bad:
-            bad_statuses = [
-                (s, v)
-                for s, v in row.items()
-                if s not in GOOD_STATUSES + NEUTRAL_STATUSES
-            ]
+        if is_erroring:
             bad_rows.append((source, total, bad_statuses))
 
     return bad_rows

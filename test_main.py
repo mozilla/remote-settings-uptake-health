@@ -49,7 +49,7 @@ def test_run_no_problems(capsys):
     bad_rows = run()
     assert not bad_rows, bad_rows
 
-    good = 123_456 + 234_567
+    good = 123_456 + 234_567 + 1_000_000
     bad = 1234 + 123
     error_rate = 100 * bad / (good + bad)
     error_rate_str = f"{error_rate:.2f}%"
@@ -73,7 +73,7 @@ def test_run_problems(capsys):
                         "up_to_date": 234_567,
                         "network_error": 12340,
                         "sync_error": 123,
-                        "pref_disabled": 1_000_000,  # remember, neutral and ignored
+                        "pref_disabled": 10,
                     }
                 ]
             }
@@ -85,7 +85,7 @@ def test_run_problems(capsys):
     assert bad_rows
     bad_row, = bad_rows
     assert bad_row[0] == "foo/bar"
-    assert bad_row[1] == 123_456 + 234_567 + 12340 + 123
+    assert bad_row[1] == 123_456 + 234_567 + 12340 + 123 + 10
     bad_keys = [x[0] for x in bad_row[2]]
     assert bad_keys == ["network_error", "sync_error"]
 
@@ -93,7 +93,7 @@ def test_run_problems(capsys):
     # This will result in a error rate of 3.36%
     # which is more than the DEFAULT_ERROR_THRESHOLD_PERCENT
     # set in pytest.ini.
-    good = 123_456 + 234_567
+    good = 123_456 + 234_567 + 10
     bad = 12340 + 123
     error_rate = 100 * bad / (good + bad)
     error_rate_str = f"{error_rate:.2f}%"
