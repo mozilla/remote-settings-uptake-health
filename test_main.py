@@ -22,6 +22,8 @@ def test_run_no_problems(capsys):
                 "rows": [
                     {
                         "source": "foo/bar",
+                        "min_timestamp": 1_551_657_600,
+                        "max_timestamp": 1_551_743_999,
                         "success": 123_456,
                         "up_to_date": 234_567,
                         "network_error": 1234,
@@ -31,6 +33,8 @@ def test_run_no_problems(capsys):
                     # This one should be ignored
                     {
                         "source": "trouble/maker",
+                        "min_timestamp": 1_551_657_600,
+                        "max_timestamp": 1_551_743_999,
                         "success": 100_000,
                         "up_to_date": 200_000,
                         "network_error": 75000,
@@ -51,6 +55,7 @@ def test_run_no_problems(capsys):
     error_rate_str = f"{error_rate:.2f}%"
     captured = capsys.readouterr()
     assert error_rate_str in captured.out
+    assert "From 2019-03-04 00:00:00 to 2019-03-04 23:59:59" in captured.out
 
 
 @responses.activate
@@ -62,6 +67,8 @@ def test_run_problems(capsys):
                 "rows": [
                     {
                         "source": "foo/bar",
+                        "min_timestamp": 1_551_657_600,
+                        "max_timestamp": 1_551_743_999,
                         "success": 123_456,
                         "up_to_date": 234_567,
                         "network_error": 12340,

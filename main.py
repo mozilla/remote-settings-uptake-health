@@ -1,3 +1,4 @@
+from datetime import datetime
 from fnmatch import fnmatch
 from urllib.parse import urlencode
 
@@ -164,10 +165,21 @@ def run(verbose=False, dry_run=False):
     query_result = data["query_result"]
     data = query_result["data"]
     rows = data["rows"]
+
+    # Determine the date range of this dataset.
+    # We `pop()` the columns to eventually keep statuses only.
+    min_timestamp = min(row.pop("min_timestamp") for row in rows)
+    max_timestamp = max(row.pop("max_timestamp") for row in rows)
+    click.secho(
+        "📅 From {} to {}".format(
+            datetime.utcfromtimestamp(min_timestamp),
+            datetime.utcfromtimestamp(max_timestamp),
+        )
+    )
+
     bad_rows = []
     for row in rows:
         source = row.pop("source")
-
         if exclude_source(source):
             log(f"Skipping {source!r} because it's excluded")
             continue
