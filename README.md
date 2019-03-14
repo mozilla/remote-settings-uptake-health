@@ -1,3 +1,8 @@
+# MOVED 
+
+**Moved to be a part of [https://github.com/mozilla-services/remote-settings-lambdas](https://github.com/mozilla-services/remote-settings-lambdas)**
+
+
 # remote-settings-health
 
 The objective of this script is to check in on the collected uptake from Telemetry
